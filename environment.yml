@@ -1,0 +1,10 @@
+name: fad2-legume-phylo
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python=3.11
+  - mafft=7.505
+  - fasttree=2.1.11
+  - matplotlib
+  - curl

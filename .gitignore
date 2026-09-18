@@ -1,0 +1,11 @@
+# Raw input data is fetched by scripts/fetch_data.sh and is not committed.
+data/*.fasta
+!data/.gitkeep
+
+# Logs from the pipeline re-runs (kept as example output in results/ already)
+*.log
+
+# Python / OS junk
+__pycache__/
+*.pyc
+.DS_Store
