@@ -87,11 +87,13 @@ def assign_positions(node, depth_acc, y_counter, y_positions):
     return y
 
 
-def plot(root, out_png, title="FAD2 protein tree (FastTree, JTT+CAT)"):
+def plot(root, out_png, title="FAD2 protein tree (FastTree, JTT+CAT)",
+         support_label="support"):
     y_positions = {}
     assign_positions(root, 0.0, [0], y_positions)
+    x_max = max(x for x, _ in y_positions.values())
 
-    fig, ax = plt.subplots(figsize=(7, 3.5))
+    fig, ax = plt.subplots(figsize=(8, 4))
 
     def draw(node):
         x, y = y_positions[id(node)]
@@ -102,10 +104,15 @@ def plot(root, out_png, title="FAD2 protein tree (FastTree, JTT+CAT)"):
         if not node.is_leaf():
             child_ys = [y_positions[id(c)][1] for c in node.children]
             ax.plot([x, x], [min(child_ys), max(child_ys)], color="black", lw=1.5)
+            # internal node label = branch support (FastTree SH-like or
+            # IQ-TREE bootstrap %), drawn as small grey text above the node
+            if node.name:
+                ax.text(x, y + 0.012 * len(y_positions), node.name,
+                        va="bottom", ha="center", fontsize=7, color="dimgray")
             for c in node.children:
                 draw(c)
         else:
-            ax.text(x + 0.005, y, node.name, va="center", ha="left", fontsize=9)
+            ax.text(x + 0.01 * x_max, y, node.name, va="center", ha="left", fontsize=9)
 
     draw(root)
     ax.set_xlabel("Substitutions per site")
@@ -113,15 +120,23 @@ def plot(root, out_png, title="FAD2 protein tree (FastTree, JTT+CAT)"):
     for spine in ["top", "right", "left"]:
         ax.spines[spine].set_visible(False)
     ax.set_title(title)
+    ax.text(0.99, 0.02, f"internal labels = {support_label}",
+            transform=ax.transAxes, ha="right", va="bottom",
+            fontsize=7, color="gray", style="italic")
     plt.tight_layout()
     plt.savefig(out_png, dpi=200)
     print(f"wrote {out_png}")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        sys.exit("usage: plot_tree.py tree.nwk out.png")
+    if len(sys.argv) not in (3, 4, 5):
+        sys.exit("usage: plot_tree.py tree.nwk out.png [title] [support_label]")
     with open(sys.argv[1]) as fh:
         newick = fh.read()
     root = parse_newick(newick)
-    plot(root, sys.argv[2])
+    kwargs = {}
+    if len(sys.argv) >= 4:
+        kwargs["title"] = sys.argv[3]
+    if len(sys.argv) == 5:
+        kwargs["support_label"] = sys.argv[4]
+    plot(root, sys.argv[2], **kwargs)

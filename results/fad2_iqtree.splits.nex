@@ -1,0 +1,25 @@
+#nexus
+
+BEGIN Taxa;
+DIMENSIONS ntax=4;
+TAXLABELS
+[1] 'tr|G8GUK7|G8GUK7_ARAHY'
+[2] 'tr|Q5FBA1|Q5FBA1_SOYBN'
+[3] 'tr|Q19AK8|Q19AK8_SOYBN'
+[4] 'sp|P46313|FAD6E_ARATH'
+;
+END; [Taxa]
+
+BEGIN Splits;
+DIMENSIONS ntax=4 nsplits=6;
+FORMAT labels=no weights=yes confidences=no intervals=no;
+MATRIX
+	100	 2,
+	100	 3,
+	100	 1 4,
+	100	 4,
+	100	 1,
+	0	 1 3,
+;
+END; [Splits]
+
