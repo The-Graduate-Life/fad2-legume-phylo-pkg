@@ -4,8 +4,7 @@ channels:
   - conda-forge
 dependencies:
   - python=3.11
-  - mafft=7.505
-  - fasttree=2.1.11
-  - entrez-direct
+  - mafft=7.526
+  - fasttree=2.2.0
   - matplotlib
   - curl
