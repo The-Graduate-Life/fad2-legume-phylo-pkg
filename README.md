@@ -12,7 +12,11 @@ FAD2-1A/1B knockouts).
 
 ## What this run does
 
-Compares three real FAD2 protein sequences:
+This is a **legume-only** comparison (no outgroup) of FAD2 protein
+sequences, in two tiers:
+
+**Core set** -- 3 sequences, pinned UniProt accessions, verified and
+committed to `results/`:
 
 | Sequence | UniProt accession | Organism | Role |
 |---|---|---|---|
@@ -20,19 +24,30 @@ Compares three real FAD2 protein sequences:
 | GmFAD2-1A | [Q5FBA1](https://www.uniprot.org/uniprotkb/Q5FBA1) | *Glycine max* (soybean) | seed-specific FAD2 paralog A |
 | GmFAD2-1B | [Q19AK8](https://www.uniprot.org/uniprotkb/Q19AK8) | *Glycine max* (soybean) | seed-specific FAD2 paralog B |
 
-An optional Arabidopsis outgroup (UniProt P46313) can be added with one
-flag (see below) to root the comparison; the pipeline itself places no
-ceiling on the number of sequences -- swap in any FAD2 (or other
-single-gene-family) FASTA and re-run.
+**Legume expansion** (optional, `-l`/`--legumes` flag) -- adds FAD2 from 4
+more legume species, fetched live from NCBI rather than pinned by
+accession (see [Data fetch](#data-fetch) for why that matters):
 
-**Note on scale:** three sequences is intentionally minimal ("light data"),
-chosen to keep the whole run well under a minute and to make every step of
-the Methods below auditable by hand. The result is still real and
-biologically sensible (see Results): the two soybean paralogs are far more
-similar to each other than either is to the peanut ortholog, consistent
-with FAD2-1A/1B arising from a relatively recent within-lineage gene
-duplication in soybean's paleopolyploid genome, while the peanut/soybean
-split reflects much deeper legume divergence.
+| Organism | Common name |
+|---|---|
+| *Cicer arietinum* | chickpea |
+| *Vigna unguiculata* | cowpea |
+| *Medicago truncatula* | barrel medic (legume model species) |
+| *Cajanus cajan* | pigeon pea |
+
+The pipeline itself places no ceiling on the number of sequences -- swap
+in any FAD2 (or other single-gene-family) FASTA and re-run.
+
+**Note on scale:** the core 3-sequence set is intentionally minimal
+("light data"), chosen to keep the whole run well under a minute and to
+make every step of the Methods below auditable by hand. The result is
+still real and biologically sensible (see Results): the two soybean
+paralogs are far more similar to each other than either is to the peanut
+ortholog, consistent with FAD2-1A/1B arising from a relatively recent
+within-lineage gene duplication in soybean's paleopolyploid genome, while
+the peanut/soybean split reflects much deeper legume divergence. The
+legume expansion scales this up to a small within-family comparison
+without changing runtime meaningfully (see [Running](#running)).
 
 ## Repository layout
 
@@ -43,7 +58,7 @@ split reflects much deeper legume divergence.
 ├── .gitignore                # data/ is fetched, not committed
 ├── data/                     # (empty in git; populated by fetch_data.sh)
 ├── scripts/
-│   ├── fetch_data.sh          # downloads sequences from UniProt (curl)
+│   ├── fetch_data.sh          # core: curl -> UniProt; -l/--legumes: esearch/efetch -> NCBI
 │   ├── run_pipeline.sh        # MAFFT -> FastTree -> stats -> figure
 │   ├── pairwise_identity.py   # % identity matrix from the alignment
 │   └── plot_tree.py           # renders the Newick tree as a PNG
@@ -58,69 +73,91 @@ split reflects much deeper legume divergence.
 
 ## Environment and installs
 
-Everything runs from the command line; the only non-Python/R dependencies
-are **MAFFT** and **FastTree**, both standard, actively-maintained
-bioinformatics binaries.
+Everything runs from the command line. Core dependencies are **MAFFT** and
+**FastTree**; the legume expansion additionally needs **NCBI Entrez
+Direct** (`esearch`/`efetch`).
 
-**Option A -- conda (recommended, matches `environment.yml`):**
+**conda (recommended -- this is what `environment.yml` declares, including
+Entrez Direct, so the whole toolchain is reproducible from one file with
+no `sudo`/system-package step):**
 
 ```bash
-conda env create -f environment.yml
+conda env create -f environment.yml   # first time
+# or, to add entrez-direct to an existing env:
+conda env update -f environment.yml
 conda activate fad2-legume-phylo
 ```
 
-**Option B -- apt (Debian/Ubuntu):**
-
-```bash
-sudo apt-get update
-sudo apt-get install -y mafft fasttree python3-matplotlib curl
-```
-
-**Option C -- Homebrew (macOS):**
-
-```bash
-brew install mafft fasttree
-pip install matplotlib
-```
+If `conda` is slow to resolve dependencies, `mamba env update -f
+environment.yml` is a drop-in faster solver.
 
 Versions used to produce the committed `results/`: MAFFT v7.505, FastTree
-v2.1.11 (Double precision), Python 3.11 + matplotlib 3.10.
+v2.1.11 (Double precision), Python 3.11 + matplotlib 3.10. (Entrez Direct
+is only exercised by the optional legume-expansion fetch, so it isn't
+reflected in the committed core-set results.)
 
 ## Data fetch
 
-Sequences are pulled from UniProtKB's REST API (no account or API key
-needed):
+**Core set** (3 sequences, pinned UniProt accessions, `curl` only):
 
 ```bash
-bash scripts/fetch_data.sh            # core 3-sequence set
-bash scripts/fetch_data.sh --extended # + Arabidopsis outgroup (4 sequences)
+bash scripts/fetch_data.sh
 ```
 
 This writes `data/E9M5E3.fasta`, `data/Q5FBA1.fasta`, `data/Q19AK8.fasta`
-(and optionally `data/P46313.fasta`), and concatenates them into
-`data/fad2_seed.fasta`, which is what the pipeline consumes. Raw sequence
-data is **not** committed to this repository (see `.gitignore`) -- re-run
-the fetch script to regenerate it; the exact accessions are documented
-both here and inline in `fetch_data.sh`, so the fetch is fully
-reproducible.
+and concatenates them into `data/fad2_seed.fasta`, which the pipeline
+consumes. The exact accessions are documented both here and inline in
+`fetch_data.sh`, so this half of the fetch is fully reproducible byte-for-byte.
 
-To go beyond FAD2 in these three species, search UniProt or use NCBI
-Entrez Direct (`esearch`/`efetch`) for additional accessions and append
-them to `data/fad2_seed.fasta` before running the pipeline -- see the
-comments in `scripts/fetch_data.sh` for a worked example command.
+**Legume expansion** (+4 species, live NCBI query, needs Entrez Direct):
+
+```bash
+bash scripts/fetch_data.sh --legumes   # or -l
+```
+
+This re-fetches the core 3, then queries NCBI's protein database for
+`FAD2[Title] AND "<organism>"[Organism]` for each of the 4 additional
+legumes and appends whatever comes back to `data/fad2_seed.fasta`. Unlike
+the core set, **these are not pinned accessions** -- NCBI annotation
+naming isn't fully standardized across species, so a query can return
+zero, one, or several hits, and occasionally a partial/fragment sequence
+or an off-target hit. The script prints every header it fetched for the
+expansion; **read that list before running the pipeline**, and manually
+remove (from `data/fad2_seed.fasta`) any entry that looks like a
+duplicate, a fragment, or an unrelated protein. Record whatever you keep
+or remove in your own lab notes / commit message, since a live query is
+not by itself a reproducible citation the way a pinned accession is.
+
+Raw sequence data is **not** committed to this repository (see
+`.gitignore`) -- re-run the fetch script(s) to regenerate it.
+
+To broaden further still, search UniProt directly or adjust the
+`LEGUME_ORGANISMS` list in `scripts/fetch_data.sh`.
 
 ## Running
+
+Core set only:
 
 ```bash
 bash scripts/fetch_data.sh
 bash scripts/run_pipeline.sh
 ```
 
-Total wall-clock time for the 3-sequence set: a few seconds. Even scaled
-up to a few dozen sequences (e.g. a full plant FAD2 gene family), MAFFT +
-FastTree on a laptop should stay well within the 30-minute budget --
-FastTree in particular scales near-linearly and is explicitly designed for
-alignments with thousands of sequences.
+With the legume expansion:
+
+```bash
+bash scripts/fetch_data.sh --legumes
+# review the printed header list, edit data/fad2_seed.fasta if needed
+bash scripts/run_pipeline.sh
+```
+
+Total wall-clock time for the 3-sequence core set: a few seconds. The
+legume expansion adds a handful of NCBI round-trips (typically well under
+a minute) plus a few more seconds of MAFFT/FastTree on 7 sequences instead
+of 3 -- still trivial next to the 30-minute budget. FastTree in particular
+scales near-linearly and is explicitly designed for alignments with
+thousands of sequences, so this pipeline has plenty of headroom to grow
+well past a full plant FAD2 gene family without approaching that budget.
 
 ## Methods (as you'd write it up)
 
@@ -140,7 +177,9 @@ from the MAFFT alignment (identical residues / aligned, non-gap columns).
 The resulting tree was rendered with a minimal custom Newick parser and
 matplotlib (no third-party tree-plotting library required).
 
-## Results (this run)
+## Results
+
+**Core set (committed in `results/`, this repo's checked-in example run):**
 
 Pairwise percent identity (`results/pairwise_identity.tsv`):
 
@@ -155,6 +194,16 @@ AhFAD2 = 0.171, GmFAD2-1A = 0.029, GmFAD2-1B = 0.037 -- i.e. the two
 soybean paralogs sit on much shorter branches from their common node than
 either does from the peanut sequence, matching the ~94% vs ~83% identity
 split above. See `results/fad2_tree.png` for the rendered tree.
+
+**Legume expansion:** not yet run in this checked-in example -- the
+sequences depend on a live NCBI query (see [Data fetch](#data-fetch)), so
+they aren't pinned/reproducible enough to commit as a fixed "expected"
+result the way the core set is. Run `bash scripts/fetch_data.sh --legumes
+&& bash scripts/run_pipeline.sh` to generate it locally; if you want that
+expanded tree/table committed to this repo as a second example, add it
+under `results/` (e.g. `results/legume_expansion/`) alongside a note of
+exactly which accessions/headers ended up in `data/fad2_seed.fasta`, so
+the Methods section can cite it precisely.
 
 ## References
 
