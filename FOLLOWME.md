@@ -98,6 +98,21 @@ Outputs land in `results/` (core set) and, with `--both`, also
 
 ## 4. Check the results
 
+**The fast way -- one command, pass/fail:**
+
+```bash
+bash scripts/verify_results.sh results 4
+bash scripts/verify_results.sh results/legume_expansion 11
+```
+
+Each prints `OK`/`FAIL` for every check (file presence, sequence count,
+genuine outgroup rooting, ModelFinder ran, pairwise-identity matrix looks
+sane) and exits non-zero if anything's wrong -- this is the version to
+use if you're scripting this or handing it to another agent, rather than
+reading output by eye.
+
+**The manual way, if you want to look yourself:**
+
 **Did it actually finish?** Each stage should have produced these files
 (shown for `results/`; same names apply under `results/legume_expansion/`):
 
