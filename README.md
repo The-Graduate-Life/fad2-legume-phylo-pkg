@@ -62,8 +62,7 @@ ortholog, consistent with FAD2-1A/1B arising from a relatively recent
 within-lineage gene duplication in soybean's paleopolyploid genome, while
 the peanut/soybean split reflects much deeper legume divergence, and the
 Arabidopsis outgroup is more diverged still. The legume expansion scales
-this up to an 11-taxon comparison with real bootstrap support, still
-trivial against the 30-minute budget (see [Running](#running)).
+this up to an 11-taxon comparison with real bootstrap support.
 
 ## Repository layout
 
